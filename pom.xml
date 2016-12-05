@@ -49,6 +49,16 @@
         <type>pom</type>
         <scope>import</scope>
       </dependency>
+      <dependency>
+      	<groupId>org.springframework.boot</groupId>
+      	<artifactId>spring-boot-starter</artifactId>
+      	<version>1.4.2.RELEASE</version>
+      </dependency>
+      <dependency>
+      	<groupId>org.springframework.boot</groupId>
+      	<artifactId>spring-boot</artifactId>
+      	<version>1.4.2.RELEASE</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 
@@ -58,10 +68,14 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
+      <version>1.4.2.RELEASE</version>
+      <scope>runtime</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-web</artifactId>
+      <version>1.4.2.RELEASE</version>
+      <scope>runtime</scope>
     </dependency>
 
     <dependency>
@@ -84,6 +98,7 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
       <scope>test</scope>
+      <version>1.4.2.RELEASE</version>
     </dependency>
     <dependency>
       <groupId>org.jboss.arquillian.junit</groupId>
