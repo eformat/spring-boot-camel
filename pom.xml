@@ -138,7 +138,7 @@
 							<goal>repackage</goal>
 						</goals>
 						<configuration>
-							<finalName>spring-boot-camel.jar</finalName>
+							<finalName>spring-boot-camel</finalName>
 						</configuration>
 					</execution>
 				</executions>
