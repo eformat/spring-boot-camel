@@ -5,11 +5,11 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConfigurationProperties(prefix = "helloservice")
-public class ApplicationConfig {
+public class ApplicationConfigBean {
 
     private String message;
 
-    public ApplicationConfig() {
+    public ApplicationConfigBean() {
     }
 
     public String getMessage() {
