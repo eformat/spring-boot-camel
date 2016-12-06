@@ -15,17 +15,18 @@
  */
 package io.fabric8.quickstarts.camel;
 
-import org.apache.camel.builder.RouteBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
+//import org.apache.camel.builder.RouteBuilder;
+//import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.ImportResource;
+//import org.springframework.stereotype.Component;
 
 /**
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
 @SpringBootApplication
-//@ImportResource({"classpath:spring/camel-context.xml"})
+@ImportResource({"classpath:spring/camel-context.xml"})
 public class Application {
 
     // must have a main method spring-boot can run
@@ -33,7 +34,7 @@ public class Application {
         SpringApplication.run(Application.class, args);
     }
 }
-@Component
+/*@Component
 class HelloRouter extends RouteBuilder {
  
     @Autowired
@@ -47,4 +48,4 @@ class HelloRouter extends RouteBuilder {
         .log(">>> ${body}");
     }
 
-}
+}*/
