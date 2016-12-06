@@ -21,7 +21,6 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.build.finalName>spring-boot-camel.jar</project.build.finalName>
 
 		<!-- configure the versions you want to use here -->
 		<fabric8.version>2.2.183</fabric8.version>
