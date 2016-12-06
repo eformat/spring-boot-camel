@@ -20,14 +20,14 @@ import org.apache.camel.builder.RouteBuilder;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.context.annotation.ImportResource;
+//import org.springframework.context.annotation.ImportResource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
 @SpringBootApplication
-@ImportResource({"classpath:spring/camel-context.xml"})
+//@ImportResource({"classpath:spring/camel-context.xml"})
 public class Application extends RouteBuilder {
 
     @Autowired
