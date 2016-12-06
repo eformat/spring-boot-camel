@@ -137,6 +137,9 @@
 						<goals>
 							<goal>repackage</goal>
 						</goals>
+						<configuration>
+							<finalName>spring-boot-camel</finalName>
+						</configuration>
 					</execution>
 				</executions>
 			</plugin>
