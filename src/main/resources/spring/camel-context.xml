@@ -6,7 +6,7 @@
         <route id="_route1">
             <from id="_from1" uri="timer://foo?period=5000"/>
             <setBody id="_setBody1">
-                <simple>Hello World from camel-contex.xml</simple>
+                <simple>Hello World from camel-context.xml</simple>
             </setBody>
             <log id="_log1" message=">>> ${body}"/>
         </route>
