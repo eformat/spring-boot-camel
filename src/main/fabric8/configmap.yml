@@ -1,0 +1,7 @@
+data:
+  application.yaml: |-
+    helloservice:
+      message: hello, spring cloud kubernetes !
+      time: 5000
+metadata:
+  name: helloservice

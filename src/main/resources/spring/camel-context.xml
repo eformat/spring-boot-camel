@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
-    <!-- You could also define a traditional camel context here -->
+    <!-- You could also define a traditional camel context here (comment-out this for xml spring.cloud.kubernetes.reload.strategy=restart_context)
     <camelContext id="camelContext-12a48931-9455-4bc2-8f66-05478a636154" xmlns="http://camel.apache.org/schema/spring">
         <route id="_route1">
             <from id="_from1" uri="timer://foo?period=5000"/>
@@ -10,5 +10,5 @@
             </setBody>
             <log id="_log1" message=">>> ${body}"/>
         </route>
-    </camelContext>
+    </camelContext -->
 </beans>
