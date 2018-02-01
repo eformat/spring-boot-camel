@@ -93,8 +93,7 @@ pipeline {
                                     packaging = pom.packaging
                                     NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
                                 }
-                                def dc = openshift.selector("dc", "${APP_NAME}")
-                                dc.status("-w")
+                                openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
 
                                 /*
                                 //dc2Selector.rollout().status("-w")
