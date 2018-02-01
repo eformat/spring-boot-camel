@@ -7,8 +7,8 @@ spring:
     cloud:
         kubernetes:
             reload:
-                enabled: true
-                strategy: refresh
+                enabled: false
+                strategy: reload
 
 server:
     address: 0.0.0.0 # lets listen on all ports to ensure we can be invoked from the pod IP
