@@ -1,12 +1,45 @@
 spec:
   template:
     spec:
+      volumes:
+        - name: config
+          configMap:
+            name: ${project.artifactId}
+            items:
+            - key: application.properties
+              path: application.properties
       containers:
-        - 
+        -
+          volumeMounts:
+            - name: config
+              mountPath: /deployments/config
           resources:
             requests:
               cpu: "0.2"
-              memory: 256Mi
+              memory: 512Mi
             limits:
               cpu: "1.0"
-              memory: 256Mi
+              memory: 512Mi
+          env:
+            - name: ACTIVEMQ_SERVICE_NAME
+              value: broker-amq-tcp
+          livenessProbe:
+            failureThreshold: 1
+            httpGet:
+              path: "/health"
+              port: 8081
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            successThreashold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: "/health"
+              port: 8081
+            scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 3
+            successThreashold: 1
+            timeoutSeconds: 1

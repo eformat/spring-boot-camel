@@ -10,7 +10,7 @@
         <relativePath></relativePath>
     </parent>
     <groupId>io.fabric8.quickstarts</groupId>
-    <artifactId>spring-boot-camel</artifactId>
+    <artifactId>helloservice</artifactId>
     <version>1.0-SNAPSHOT</version>
     <name>Fabric8 :: Quickstarts :: Spring-Boot :: Camel</name>
     <description>Spring Boot example running a Camel route</description>
@@ -153,6 +153,16 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <resources>
+                        <labels>
+                            <all>
+                                <property>
+                                    <name>project</name>
+                                    <value>${project.artifactId}</value>
+                                </property>
+                            </all>
+                        </labels>
+                    </resources>
                     <generator>
                         <config>
                             <spring-boot>

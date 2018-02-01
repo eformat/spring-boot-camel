@@ -54,6 +54,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject() {
                                 openshift.newProject("${DEV_PROJECT}")
+                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${DEV_PROJECT}"
                             }
                         }
                     }
@@ -167,6 +168,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject() {
                                 openshift.newProject("${TEST_PROJECT}")
+                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${TEST_PROJECT}"
                             }
                         }
                     }
