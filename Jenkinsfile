@@ -94,17 +94,6 @@ pipeline {
                                     NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
                                 }
                                 openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
-
-                                /*
-                                //dc2Selector.rollout().status("-w")
-                                // Prints a list of current service accounts to the console
-                                openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
-                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}") {
-                                    shortName = it.object().metadata.name
-                                    podPhase = it.object().status.phase
-                                    println("Pod name:" + shortName + " Pod status:" + podPhase)
-                                    return (it.object().status.phase == "Running")
-                                } */
                             }
                         }
                     }
