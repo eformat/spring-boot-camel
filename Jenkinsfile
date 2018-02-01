@@ -94,11 +94,7 @@ pipeline {
                                     NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
                                 }
                                 def dc = openshift.selector("dc", "${APP_NAME}")
-                                echo "There are ${dc.count()} Deployment Config's"
-                                dc.untilEach {
-                                    echo "Deployment: ${it.name()} Phase: ${it.object().status.phase}"
-                                    return (it.object().status.phase == "Completed")
-                                }
+                                dc.status("-w")
 
                                 /*
                                 //dc2Selector.rollout().status("-w")
