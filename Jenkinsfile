@@ -16,7 +16,7 @@ pipeline {
     }
     agent none
     parameters {
-        string(name: 'APP_NAME', defaultValue: 'spring-boot-camel', description: "Application Name - all resources use this name as a label")
+        string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
         string(name: 'GIT_BRANCH', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")
         string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
