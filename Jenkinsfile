@@ -71,7 +71,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
-                                          branches         : [[name: "*/${GIT_REF}"]],
+                                          branches         : [[name: "*/${GIT_BRANCH}"]],
                                           userRemoteConfigs: [[url: "${GIT_URL}"]]
                                 ]);
                                 dir("${WORKSPACE}") {
