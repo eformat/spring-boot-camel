@@ -81,10 +81,10 @@ pipeline {
                                 dir("${WORKSPACE}") {
                                     def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                                     echo "${commit_id}"
+                                    sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                     if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
                                         sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                     }
-                                    sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                     // TODO: push to nexus
                                     def pom = readMavenPom file: "pom.xml"
                                     appVersion = pom.version
