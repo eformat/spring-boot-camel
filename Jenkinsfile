@@ -14,7 +14,9 @@ pipeline {
         // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
         skipDefaultCheckout()
     }
-    agent none
+    agent {
+        label 'maven'
+    }
     parameters {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
@@ -29,7 +31,6 @@ pipeline {
     }
     stages {
         stage('initialise') {
-            agent any
             steps {
                 echo "Build Number is: ${env.BUILD_NUMBER}"
                 echo "Job Name is: ${env.JOB_NAME}"
@@ -39,7 +40,6 @@ pipeline {
         }
 
         stage('create dev project') {
-            agent any
             when {
                 expression {
                     openshift.withCluster() {
@@ -64,9 +64,6 @@ pipeline {
         }
 
         stage('build and deploy dev') {
-            agent {
-                label 'maven'
-            }
             steps {
                 script {
                     openshift.withCluster() {
@@ -78,22 +75,42 @@ pipeline {
                                 ]);
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
-                                dir("${WORKSPACE}") {
-                                    def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                                    echo "${commit_id}"
-                                    sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
-                                    if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
-                                        sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
-                                    }
-                                    // TODO: push to nexus
-                                    def pom = readMavenPom file: "pom.xml"
-                                    appVersion = pom.version
-                                    artifactId = pom.artifactId
-                                    groupId = pom.groupId.replace(".", "/")
-                                    packaging = pom.packaging
-                                    NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
+                                def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                                echo "${commit_id}"
+                                if (openshift.selector("dc", "${APP_NAME}").exists()) {
+                                    sh "oc set triggers dc/${APP_NAME} --manual -n ${DEV_PROJECT}"
                                 }
+                                sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
+                                if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
+                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                }
+                                // TODO: push to nexus
+                                def pom = readMavenPom file: "pom.xml"
+                                appVersion = pom.version
+                                artifactId = pom.artifactId
+                                groupId = pom.groupId.replace(".", "/")
+                                packaging = pom.packaging
+                                NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
+                                // watch deployment
                                 openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
+                                sh "oc set triggers dc/${APP_NAME} --auto -n ${DEV_PROJECT}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('scale replicas dev') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withCredentials() {
+                            openshift.withProject("${DEV_PROJECT}") {
+                                openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
+                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}".toInteger()) {
+                                    return (it.object().status.phase == "Running")
+                                }
                             }
                         }
                     }
@@ -102,7 +119,6 @@ pipeline {
         }
 
         stage('create dev route') {
-            agent any
             when {
                 expression {
                     openshift.withCluster() {
@@ -126,7 +142,6 @@ pipeline {
         }
 
         stage('test deployment') {
-            agent any
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     input 'Do you approve deployment to Test environment ?'
@@ -135,7 +150,6 @@ pipeline {
         }
 
         stage('create test project') {
-            agent any
             when {
                 expression {
                     openshift.withCluster() {
@@ -162,19 +176,20 @@ pipeline {
         }
 
         stage('promote to test') {
-            agent any
             steps {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
-                                def testImage = "docker-registry.default.svc:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
-                                def patch1 = $/oc export dc,svc -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
+                                def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
+                                def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
                                 sh patch1
                                 if (fileExists("configuration/${TEST_PROJECT}/application.yml")) {
                                     sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
                                 }
                                 openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
+                            }
+                            openshift.withProject("${TEST_PROJECT}") {
                                 openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
                             }
                         }
@@ -184,7 +199,6 @@ pipeline {
         }
 
         stage('scale replicas test') {
-            agent any
             steps {
                 script {
                     openshift.withCluster() {
@@ -202,7 +216,6 @@ pipeline {
         }
 
         stage('create test route') {
-            agent any
             when {
                 expression {
                     openshift.withCluster() {
