@@ -25,6 +25,7 @@ pipeline {
         string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
         string(name: 'TEST_REPLICA_COUNT', defaultValue: '1', description: "Number of test pods we desire")
         string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
+        string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.cicd.svc.cluster.local:8081/maven-public/', description: "Maven Mirror")
     }
     stages {
         stage('initialise') {
@@ -75,6 +76,8 @@ pipeline {
                                           branches         : [[name: "*/${GIT_BRANCH}"]],
                                           userRemoteConfigs: [[url: "${GIT_URL}"]]
                                 ]);
+                                // maven cache configuration (change mirror host)
+                                sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
                                 dir("${WORKSPACE}") {
                                     if (fileExists("configuration/${DEV_PROJECT}/application.properties")) {
                                         sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.properties --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
