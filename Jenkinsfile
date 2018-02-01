@@ -63,7 +63,7 @@ pipeline {
             }
         }
 
-        stage('build dev') {
+        stage('build and deploy dev') {
             agent {
                 label 'maven'
             }
@@ -81,40 +81,35 @@ pipeline {
                                 dir("${WORKSPACE}") {
                                     def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                                     echo "${commit_id}"
-                                    def pom = readMavenPom file: "pom.xml"
-                                    sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                     if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
                                         sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                     }
+                                    sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                     // TODO: push to nexus
+                                    def pom = readMavenPom file: "pom.xml"
                                     appVersion = pom.version
                                     artifactId = pom.artifactId
                                     groupId = pom.groupId.replace(".", "/")
                                     packaging = pom.packaging
                                     NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
                                 }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                                def dc = openshift.selector("dc", "${APP_NAME}")
+                                echo "There are ${dc.count()} Deployment Config's"
+                                dc.untilEach {
+                                    echo "Deployment: ${it.name()} Phase: ${it.object().status.phase}"
+                                    return (it.object().status.phase == "Completed")
+                                }
 
-        stage('deploy dev') {
-            agent any
-            steps {
-                script {
-                    openshift.withCluster() {
-                        openshift.withCredentials() {
-                            openshift.withProject("${DEV_PROJECT}") {
-                                //openshift.selector("dc", "${APP_NAME}").rollout()
+                                /*
+                                //dc2Selector.rollout().status("-w")
+                                // Prints a list of current service accounts to the console
                                 openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
-                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach {
+                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}") {
                                     shortName = it.object().metadata.name
                                     podPhase = it.object().status.phase
                                     println("Pod name:" + shortName + " Pod status:" + podPhase)
                                     return (it.object().status.phase == "Running")
-                                }
+                                } */
                             }
                         }
                     }
