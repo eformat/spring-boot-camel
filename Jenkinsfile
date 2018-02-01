@@ -25,7 +25,7 @@ pipeline {
         string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
         string(name: 'TEST_REPLICA_COUNT', defaultValue: '1', description: "Number of test pods we desire")
         string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
-        string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.cicd.svc.cluster.local:8081/maven-public/', description: "Maven Mirror")
+        string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.nexus.svc.cluster.local:8081/maven-public/', description: "Maven Mirror")
     }
     stages {
         stage('initialise') {
