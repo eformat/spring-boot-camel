@@ -110,6 +110,8 @@ pipeline {
                                 openshift.selector("dc", "${APP_NAME}").rollout()
                                 openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
                                 openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}".toInteger()) {
+                                    podPhase = it.object().status.phase
+                                    println("Pod status:" + podPhase)
                                     return (it.object().status.phase == "Running")
                                 }
                             }
