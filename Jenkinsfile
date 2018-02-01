@@ -107,11 +107,12 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
-                                openshift.selector("dc", "${APP_NAME}").rollout()
+                                //openshift.selector("dc", "${APP_NAME}").rollout()
                                 openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
-                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}".toInteger()) {
+                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach {
+                                    shortName = it.object().metadata.name
                                     podPhase = it.object().status.phase
-                                    println("Pod status:" + podPhase)
+                                    println("Pod name:" + shortName + " Pod status:" + podPhase)
                                     return (it.object().status.phase == "Running")
                                 }
                             }
