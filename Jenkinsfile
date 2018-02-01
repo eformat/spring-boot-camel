@@ -79,19 +79,19 @@ pipeline {
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
                                 dir("${WORKSPACE}") {
-                                    if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
-                                        sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
-                                    }
                                     def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                                     echo "${commit_id}"
                                     def pom = readMavenPom file: "pom.xml"
                                     sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
+                                    if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
+                                        sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                    }
+                                    // TODO: push to nexus
                                     appVersion = pom.version
                                     artifactId = pom.artifactId
                                     groupId = pom.groupId.replace(".", "/")
                                     packaging = pom.packaging
                                     NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
-                                    // TODO: push to nexus
                                 }
                             }
                         }
