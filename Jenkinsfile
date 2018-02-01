@@ -79,8 +79,8 @@ pipeline {
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
                                 dir("${WORKSPACE}") {
-                                    if (fileExists("configuration/${DEV_PROJECT}/application.properties")) {
-                                        sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.properties --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                    if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
+                                        sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                     }
                                     def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                                     echo "${commit_id}"
@@ -189,8 +189,8 @@ pipeline {
                                 def testImage = "docker-registry.default.svc:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
                                 def patch1 = $/oc export dc,svc -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
                                 sh patch1
-                                if (fileExists("configuration/${TEST_PROJECT}/application.properties")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.properties --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
+                                if (fileExists("configuration/${TEST_PROJECT}/application.yml")) {
+                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
                                 }
                                 openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
                             }
