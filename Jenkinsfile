@@ -186,6 +186,7 @@ pipeline {
                                     sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
                                 }
                                 openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
+                                openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
                             }
                         }
                     }
