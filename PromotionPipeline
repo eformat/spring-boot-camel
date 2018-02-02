@@ -1,0 +1,82 @@
+#!groovy
+pipeline {
+    environment {
+        // Move these to Credential Plugin
+        SRC_CREDS="skopeo:eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJjaWNkIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZWNyZXQubmFtZSI6InNrb3Blby10b2tlbi1yc2ZmcyIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50Lm5hbWUiOiJza29wZW8iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJhMTViZmNmMi0wN2MzLTExZTgtYTJiNC1hNDRjYzhmYjYyM2IiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6Y2ljZDpza29wZW8ifQ.NFBsD6BXMKf0mnX6j5Rgzfzf_ifqR0fiPSKNArXyI7JARHXsLwg7HP1QOuiBAASuoQO8wfQwWgajOwrShi7LROh2GAj4S0V3WsNwzUburMP11h4i2QXsk9c48vOTo6ZZGjR86_NahPnDxgYKfKRtO2vu1zOj6AV_uYx08Y0MiBN5WRDvHzhOw5Vh3PFOXUbrHYHzb-Vv33VJh4SkjwRRUJpQHXZf4LxQjEiindfq-AJ6Refb6MSFIIqhE4DPBVq72aiBEqBH_34F8BoBxjiY3zUIbsLYn_Nk2h6wD4YXb9CDNyXqzu8YIswVbWEfgJtjXeVnOl5o5vQR-RYJPveVew"
+        DEST_CREDS="skopeo:eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJvcGVuc2hpZnQiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlY3JldC5uYW1lIjoic2tvcGVvLXRva2VuLTdyOWw5Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InNrb3BlbyIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VydmljZS1hY2NvdW50LnVpZCI6ImRlNDE5NzU2LTA3YWItMTFlOC1hN2IzLTAwMWE0YTE2MDE1NCIsInN1YiI6InN5c3RlbTpzZXJ2aWNlYWNjb3VudDpvcGVuc2hpZnQ6c2tvcGVvIn0.iY5H1XCKRKMzftN7ffKjOieoljtbPMm9eyNmipz3dEut62nYqYIly5DaGB7fUQ0fmYS9FlOUbPde7SZuW74ptJlDamyPbfzqZZ_JCpcf-yRj4egQ17pfg5JqA1rbwRcke8zIar0mw6cJRrIZ6TRA5kspV8EONKXrLfQ4FCTcO0AfBZ__nvVU8NyW94M61X5kmGvyeWgSiW7tXDaqZVQXfzUcgqRVu_rJovXfSYL9uZnTLHH25meDfQDBM9idvWJaB5Bq_Yh5CGlrsjGcRH9APDr2C8ZfrDBCZ8zVQfg807HnklOKQtj4r8Zxp2-Nmraz-usI4fJETjdpk7G0ZEe3gw"
+        DEST_REGISTRY="docker://docker-registry-default.10.64.30.65.nip.io"
+        DEST_TAG="release"
+    }
+    options {
+        // set a timeout of 20 minutes for this pipeline
+        timeout(time: 20, unit: 'MINUTES')
+        // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
+        skipDefaultCheckout()
+    }
+    agent {
+        label 'jenkins-slave-image-mgmt'
+    }
+    parameters {
+        string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
+        string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
+        string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
+    }
+    stages {
+        stage('initialise') {
+            steps {
+                echo "Build Number is: ${env.BUILD_NUMBER}"
+                echo "Job Name is: ${env.JOB_NAME}"
+                sh "oc version"
+                sh 'printenv'
+                sh "skopeo --version"
+            }
+        }
+        stage('copy images to prod cluster') {
+            when {
+                expression {
+                    openshift.withCluster() {
+                        openshift.withProject("${TEST_PROJECT}") {
+                            return openshift.selector("dc", "${APP_NAME}").exists();
+                        }
+                    }
+                }
+            }
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withCredentials() {
+                            openshift.withProject("${TEST_PROJECT}") {
+                                def srcPullSpec = "docker://172.30.1.1:5000" + '/' + "${TEST_PROJECT}" + '/' + "${APP_NAME}:${TEST_TAG}"
+                                def destPullSpec = "${DEST_REGISTRY}" + '/' + "openshift" + '/' + "${APP_NAME}:${DEST_TAG}"
+                                def patch1 = $/skopeo --debug copy --src-tls-verify=false --dest-tls-verify=false --src-creds="${SRC_CREDS}" --dest-creds="${DEST_CREDS}" "${srcPullSpec}" "${destPullSpec}"/$
+                                sh patch1
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('apply api objects to prod cluster') {
+            when {
+                expression {
+                    openshift.withCluster() {
+                        openshift.withProject("${TEST_PROJECT}") {
+                            return openshift.selector("dc", "${APP_NAME}").exists();
+                        }
+                    }
+                }
+            }
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withCredentials() {
+                            openshift.withProject("${TEST_PROJECT}") {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
