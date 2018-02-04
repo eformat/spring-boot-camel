@@ -1,4 +1,7 @@
 #!groovy
+/*
+ use a skopeo slave image and service account to copy images between registries
+*/
 pipeline {
     environment {
         // Move these to Credential Plugin
