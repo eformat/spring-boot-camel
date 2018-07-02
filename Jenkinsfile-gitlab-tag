@@ -5,6 +5,8 @@
 
   oc adm policy add-cluster-role-to-user self-provisioner system:serviceaccount:$(oc project -q):jenkins
   oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
+
+  This example uses gitlab deployed to OCP as an example.
  */
 pipeline {
     // environment {}
