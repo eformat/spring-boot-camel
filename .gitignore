@@ -14,4 +14,5 @@ overlays
 *.fmd
 .cache
 dependency-reduced-pom.xml
-.vagrant/
+.vagrant
+.vscode
