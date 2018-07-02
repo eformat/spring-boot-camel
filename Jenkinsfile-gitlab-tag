@@ -1,0 +1,103 @@
+#!groovy
+/*
+  Intended to run from a separate project where you have deployed Jenkins.
+  To allow the jenkins service account to create projects:
+
+  oc adm policy add-cluster-role-to-user self-provisioner system:serviceaccount:$(oc project -q):jenkins
+  oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
+ */
+pipeline {
+    // environment {}
+    options {
+        // set a timeout of 20 minutes for this pipeline
+        timeout(time: 20, unit: 'MINUTES')
+        // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
+        skipDefaultCheckout()
+    }
+    agent {
+        label 'maven'
+    }
+    parameters {
+        string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
+        string(name: 'GIT_PREFIX', defaultValue: 'https://')
+        string(name: 'GIT_URL', defaultValue: 'gitlab-ce.gitlab.svc:443/mike/spring-boot-camel.git', description: "Project Git URL)")
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")
+        string(name: 'GIT_CRED', defaultValue: 'gitcreds', description: "ID of Git credentials")
+        string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
+        string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
+        string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
+        string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
+        string(name: 'TEST_REPLICA_COUNT', defaultValue: '1', description: "Number of test pods we desire")
+        string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
+        string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/', description: "Maven Mirror")
+    }
+    stages {
+        stage('initialise') {
+            steps {
+                echo "Build Number is: ${env.BUILD_NUMBER}"
+                echo "Job Name is: ${env.JOB_NAME}"
+                sh "oc version"
+                sh 'printenv'
+                sh("git config --global http.sslVerify false")
+            }
+        }
+
+        stage('create dev project') {
+            when {
+                expression {
+                    openshift.withCluster() {
+                        openshift.withProject() {
+                            return !openshift.selector("project", "${DEV_PROJECT}").exists();
+                        }
+                    }
+                }
+            }
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withCredentials() {
+                            openshift.withProject() {
+                                openshift.newProject("${DEV_PROJECT}")
+                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${DEV_PROJECT}"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('test tagging') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withCredentials() {
+                            openshift.withProject("${DEV_PROJECT}") {
+                                checkout([$class           : 'GitSCM',
+                                          branches         : [[name: "*/${GIT_BRANCH}"]],
+                                          userRemoteConfigs: [[url: "${GIT_PREFIX}${GIT_URL}", credentialsId: "${GIT_CRED}"]]
+                                ]);
+                                // maven cache configuration (change mirror host)
+                                sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
+                                def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+
+                                withCredentials([[$class          : 'UsernamePasswordMultiBinding',
+                                                  credentialsId   : "${GIT_CRED}",
+                                                  usernameVariable: 'GIT_USERNAME',
+                                                  passwordVariable: 'GIT_PASSWORD']]) {
+
+                                    GIT_COMMIT_EMAIL = sh(script: 'git --no-pager show -s --format=\'%ae\'', returnStdout: true).trim()
+                                    GIT_COMMIT_NAME = sh(script: 'git --no-pager show -s --format=\'%an\'', returnStdout: true).trim()
+                                    echo "tag the sources with this build tag: ${commit_id} and push the tag to origin repository"
+                                    sh("git config user.email ${GIT_COMMIT_EMAIL}")
+                                    sh("git config user.name '${GIT_COMMIT_NAME}'")
+                                    sh("git tag -a ${env.BUILD_TAG} -m 'Tagging with ${env.BUILD_TAG}'")
+                                    sh('git push ${GIT_PREFIX}${GIT_USERNAME}:${GIT_PASSWORD}@${GIT_URL} --tags')
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
