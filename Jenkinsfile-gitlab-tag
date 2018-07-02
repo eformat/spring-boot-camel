@@ -94,7 +94,7 @@ pipeline {
                                     sh("git config user.name '${GIT_COMMIT_NAME}'")
                                     sh("git tag -a ${env.BUILD_TAG} -m 'Tagging with ${env.BUILD_TAG}'")
                                     sh('git push ${GIT_PREFIX}${GIT_USERNAME}:${GIT_PASSWORD}@${GIT_URL} --tags')
-                                    openshift.tag("${DEV_PROJECT}/${APP_NAME}:latest", "${DEV_PROJECT}/${APP_NAME}:${env.BUILD_TAG}")
+                                    openshift.tag("${DEV_PROJECT}/${APP_NAME}:latest", "${DEV_PROJECT}/${APP_NAME}:release")
                                 }
                             }
                         }
