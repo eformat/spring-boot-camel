@@ -19,10 +19,11 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-        <fabric8.version>2.2.170.redhat-000023</fabric8.version>
+        <fabric8.version>3.0.11.fuse-000065-redhat-3</fabric8.version>
         <spring-boot.version>1.5.13.RELEASE</spring-boot.version>
         <maven-surefire-plugin.version>2.20</maven-surefire-plugin.version>
-        <fabric8.maven.plugin.version>3.5.40</fabric8.maven.plugin.version>
+        <fabric8.maven.plugin.version>3.5.33.fuse-000089-redhat-4</fabric8.maven.plugin.version>
+        <openshift.istag>openshift/jboss-fuse70-java-openshift:1.0</openshift.istag>
     </properties>
     <dependencyManagement>
         <dependencies>
@@ -158,7 +159,7 @@
                         <config>
                             <spring-boot>
                                 <fromMode>istag</fromMode>
-                                <from>openshift/fis-java-openshift:latest</from>
+                                <from>${openshift.istag}</from>
                             </spring-boot>
                         </config>
                     </generator>
