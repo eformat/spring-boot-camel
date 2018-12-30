@@ -21,7 +21,6 @@ pipeline {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
         string(name: 'GIT_BRANCH', defaultValue: '*/master', description: "Git Branch (from Multibranch plugin if being used)")
-        string(name: 'SCM_CRED', defaultValue: 'github', description: "ID of Development OSE Jenkins credential")        
         string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
         string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
         string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
@@ -73,7 +72,7 @@ pipeline {
                             openshift.withProject("${DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
                                           branches         : [[name: "${GIT_BRANCH}"]],
-                                          userRemoteConfigs: [[url: "${GIT_URL}", credentialsId:"${SCM_CRED}"]]                                          
+                                          userRemoteConfigs: [[url: "${GIT_URL}"]]                                          
                                 ]);
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
