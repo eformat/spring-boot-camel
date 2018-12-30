@@ -1,0 +1,339 @@
+apiVersion: v1
+kind: Template
+metadata:
+  creationTimestamp: null
+  name: app-pipeline
+objects:
+- apiVersion: v1
+  kind: BuildConfig
+  metadata:
+    creationTimestamp: null
+    labels:
+      app: helloservice
+      name: helloservice
+    name: helloservice
+    annotations:
+      pipeline.alpha.openshift.io/uses: '[{"name": "helloservice", "namespace": "", "kind": "DeploymentConfig"}]'  
+  spec:
+    failedBuildsHistoryLimit: 5
+    nodeSelector: {}
+    output: {}
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+      type: None
+    strategy:
+      jenkinsPipelineStrategy:
+        env:
+        - name: APP_NAME
+          value: "${APP_NAME}"
+        - name: GIT_URL
+          value: "${GIT_URL}"
+        - name: GIT_BRANCH
+          value: "${GIT_BRANCH}"
+        - name: DEV_PROJECT
+          value: "${DEV_PROJECT}"
+        - name: DEV_REPLICA_COUNT
+          value: "${DEV_REPLICA_COUNT}"
+        - name: DEV_TAG
+          value: "${DEV_TAG}"
+        - name: TEST_PROJECT
+          value: "${TEST_PROJECT}"
+        - name: TEST_REPLICA_COUNT
+          value: "${TEST_REPLICA_COUNT}"
+        - name: TEST_TAG
+          value: "${TEST_TAG}"
+        - name: MAVEN_MIRROR
+          value: "${MAVEN_MIRROR}"
+        jenkinsfile: |
+            #!groovy
+            /*
+              Intended to run from a separate project where you have deployed Jenkins
+              To allow the jenkins service account to create projects:
+              oc adm policy add-cluster-role-to-user self-provisioner system:serviceaccount:$(oc project -q):jenkins
+              oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
+            */
+            pipeline {
+                // environment {}
+                options {
+                    // set a timeout of 20 minutes for this pipeline
+                    timeout(time: 20, unit: 'MINUTES')
+                    // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
+                    skipDefaultCheckout()
+                }
+                agent {
+                    label 'maven'
+                }
+                stages {
+                    stage('initialise') {
+                        steps {
+                            echo "Build Number is: ${env.BUILD_NUMBER}"
+                            echo "Job Name is: ${env.JOB_NAME}"
+                            sh "oc version"
+                            sh 'printenv'
+                        }
+                    }
+
+                    stage('create dev project') {
+                        when {
+                            expression {
+                                openshift.withCluster() {
+                                    openshift.withProject() {
+                                        return !openshift.selector("project", "${DEV_PROJECT}").exists();
+                                    }
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject() {
+                                            openshift.newProject("${DEV_PROJECT}")
+                                            sh "oc policy add-role-to-user view --serviceaccount=default -n ${DEV_PROJECT}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('build and deploy dev') {
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${DEV_PROJECT}") {
+                                            checkout([$class           : 'GitSCM',
+                                                      branches         : [[name: "*/${GIT_BRANCH}"]],
+                                                      userRemoteConfigs: [[url: "${GIT_URL}"]]
+                                            ]);
+                                            // maven cache configuration (change mirror host)
+                                            sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
+                                            def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                                            echo "${commit_id}"
+                                            if (openshift.selector("dc", "${APP_NAME}").exists()) {
+                                                sh "oc set triggers dc/${APP_NAME} --manual -n ${DEV_PROJECT}"
+                                            }
+                                            sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
+                                            if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
+                                                sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                            }
+                                            // TODO: push to nexus
+                                            def pom = readMavenPom file: "pom.xml"
+                                            appVersion = pom.version
+                                            artifactId = pom.artifactId
+                                            groupId = pom.groupId.replace(".", "/")
+                                            packaging = pom.packaging
+                                            NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
+                                            // watch deployment
+                                            openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
+                                            sh "oc set triggers dc/${APP_NAME} --auto -n ${DEV_PROJECT}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('scale replicas dev') {
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${DEV_PROJECT}") {
+                                            openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
+                                            openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}".toInteger()) {
+                                                return (it.object().status.phase == "Running")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('create dev route') {
+                        when {
+                            expression {
+                                openshift.withCluster() {
+                                    openshift.withProject("${DEV_PROJECT}") {
+                                        return !openshift.selector("route", "${APP_NAME}").exists();
+                                    }
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${DEV_PROJECT}") {
+                                            openshift.selector("svc", "${APP_NAME}").expose()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('test deployment') {
+                        steps {
+                            timeout(time: 5, unit: 'MINUTES') {
+                                input 'Do you approve deployment to Test environment ?'
+                            }
+                        }
+                    }
+
+                    stage('create test project') {
+                        when {
+                            expression {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject() {
+                                            return !openshift.selector("project", "${TEST_PROJECT}").exists();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject() {
+                                            openshift.newProject("${TEST_PROJECT}")
+                                            sh "oc policy add-role-to-user view --serviceaccount=default -n ${TEST_PROJECT}"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('promote to test') {
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${DEV_PROJECT}") {
+                                            def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
+                                            def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${
+                                                APP_NAME
+                                            }" --as-template="${
+                                                APP_NAME
+                                            }"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${
+                                                testImage
+                                            }\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${
+                                                TEST_PROJECT
+                                            }\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${
+                                                TEST_TAG
+                                            }\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
+                                            sh patch1
+                                            if (fileExists("configuration/${TEST_PROJECT}/application.yml")) {
+                                                sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
+                                            }
+                                            openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
+                                        }
+                                        openshift.withProject("${TEST_PROJECT}") {
+                                            openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('scale replicas test') {
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${TEST_PROJECT}") {
+                                            openshift.selector("dc", "${APP_NAME}").scale("--replicas=${TEST_REPLICA_COUNT}")
+                                            openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${TEST_REPLICA_COUNT}".toInteger()) {
+                                                return (it.object().status.phase == "Running")
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    stage('create test route') {
+                        when {
+                            expression {
+                                openshift.withCluster() {
+                                    openshift.withProject("${TEST_PROJECT}") {
+                                        return !openshift.selector("route", "${APP_NAME}").exists();
+                                    }
+                                }
+                            }
+                        }
+                        steps {
+                            script {
+                                openshift.withCluster() {
+                                    openshift.withCredentials() {
+                                        openshift.withProject("${TEST_PROJECT}") {
+                                            openshift.selector("svc", "${APP_NAME}").expose()
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+      type: JenkinsPipeline
+    successfulBuildsHistoryLimit: 5
+    triggers:
+    - github:
+        secret: secret101
+      type: GitHub
+    - generic:
+        secret: secret101
+      type: Generic
+parameters:
+- description: The App Name
+  displayName: App Name
+  name: APP_NAME
+  required: true
+  value: 'helloservice'
+- description: The URL of the repository with your application source code.
+  displayName: Git Repository URL
+  name: GIT_URL
+  required: true
+  value: 'https://github.com/eformat/spring-boot-camel.git'
+- description: Set this to a branch name, tag or other ref
+  displayName: Git Reference
+  name: GIT_BRANCH
+  value: 'master'
+- description: Set this to dev project name
+  displayName: Dev Project Name
+  name: DEV_PROJECT
+  value: 'spring-boot-camel-dev'
+- description: Number of development pods we desire
+  displayName: Dev App Replica Count
+  name: DEV_REPLICA_COUNT
+  value: '1'
+- description: Dev Tag
+  displayName: Dev Tag
+  name: DEV_TAG
+  value: 'latest'
+- description: Set this to test project name
+  displayName: Test Project Name
+  name: TEST_PROJECT
+  value: 'spring-boot-camel-test'
+- description: Number of test pods we desire
+  displayName: Test App Replica Count
+  name: TEST_REPLICA_COUNT
+  value: '1'
+- description: Test Tag
+  displayName: Test Tag
+  name: TEST_TAG
+  value: 'test'
+- description: Maven Mirror
+  displayName: Maven Mirror
+  name: MAVEN_MIRROR
+  value: 'http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/'
