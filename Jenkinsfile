@@ -36,7 +36,6 @@ pipeline {
                 echo "Job Name is: ${env.JOB_NAME}"
                 sh "oc version"
                 sh 'printenv'
-                sh "git config --global http.sslVerify false"
             }
         }
 
@@ -70,7 +69,10 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
-                                git([url: "${GIT_URL}", branch: "${GIT_BRANCH}"])
+                                checkout([$class           : 'GitSCM',
+                                          branches         : [[name: "*/${GIT_BRANCH}"]],
+                                          userRemoteConfigs: [[url: "${GIT_URL}"]]
+                                ]);
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
                                 def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
