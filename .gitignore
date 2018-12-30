@@ -16,3 +16,4 @@ overlays
 dependency-reduced-pom.xml
 .vagrant
 .vscode
+.factorypath
