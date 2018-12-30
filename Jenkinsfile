@@ -36,6 +36,7 @@ pipeline {
                 echo "Job Name is: ${env.JOB_NAME}"
                 sh "oc version"
                 sh 'printenv'
+                sh "git config --global http.sslVerify false"
             }
         }
 
