@@ -4,49 +4,49 @@ metadata:
   creationTimestamp: null
   name: app-pipeline
 objects:
-- apiVersion: v1
-  kind: BuildConfig
-  metadata:
-    creationTimestamp: null
-    labels:
-      app: helloservice
+  - apiVersion: v1
+    kind: BuildConfig
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: helloservice
+        name: helloservice
       name: helloservice
-    name: helloservice
-    annotations:
-      pipeline.alpha.openshift.io/uses: '[{"name": "helloservice", "namespace": "", "kind": "DeploymentConfig"}]'  
-  spec:
-    failedBuildsHistoryLimit: 5
-    nodeSelector: {}
-    output: {}
-    postCommit: {}
-    resources: {}
-    runPolicy: Serial
-    source:
-      type: None
-    strategy:
-      jenkinsPipelineStrategy:
-        env:
-        - name: APP_NAME
-          value: "${APP_NAME}"
-        - name: GIT_URL
-          value: "${GIT_URL}"
-        - name: GIT_BRANCH
-          value: "${GIT_BRANCH}"
-        - name: DEV_PROJECT
-          value: "${DEV_PROJECT}"
-        - name: DEV_REPLICA_COUNT
-          value: "${DEV_REPLICA_COUNT}"
-        - name: DEV_TAG
-          value: "${DEV_TAG}"
-        - name: TEST_PROJECT
-          value: "${TEST_PROJECT}"
-        - name: TEST_REPLICA_COUNT
-          value: "${TEST_REPLICA_COUNT}"
-        - name: TEST_TAG
-          value: "${TEST_TAG}"
-        - name: MAVEN_MIRROR
-          value: "${MAVEN_MIRROR}"
-        jenkinsfile: |
+      annotations:
+        pipeline.alpha.openshift.io/uses: '[{"name": "helloservice", "namespace": "", "kind": "DeploymentConfig"}]'
+    spec:
+      failedBuildsHistoryLimit: 5
+      nodeSelector: {}
+      output: {}
+      postCommit: {}
+      resources: {}
+      runPolicy: Serial
+      source:
+        type: None
+      strategy:
+        jenkinsPipelineStrategy:
+          env:
+            - name: APP_NAME
+              value: "${APP_NAME}"
+            - name: GIT_URL
+              value: "${GIT_URL}"
+            - name: GIT_BRANCH
+              value: "${GIT_BRANCH}"
+            - name: DEV_PROJECT
+              value: "${DEV_PROJECT}"
+            - name: DEV_REPLICA_COUNT
+              value: "${DEV_REPLICA_COUNT}"
+            - name: DEV_TAG
+              value: "${DEV_TAG}"
+            - name: TEST_PROJECT
+              value: "${TEST_PROJECT}"
+            - name: TEST_REPLICA_COUNT
+              value: "${TEST_REPLICA_COUNT}"
+            - name: TEST_TAG
+              value: "${TEST_TAG}"
+            - name: MAVEN_MIRROR
+              value: "${MAVEN_MIRROR}"
+          jenkinsfile: |
             #!groovy
             /*
               Intended to run from a separate project where you have deployed Jenkins
@@ -285,55 +285,55 @@ objects:
                     }
                 }
             }
-      type: JenkinsPipeline
-    successfulBuildsHistoryLimit: 5
-    triggers:
-    - github:
-        secret: secret101
-      type: GitHub
-    - generic:
-        secret: secret101
-      type: Generic
+        type: JenkinsPipeline
+      successfulBuildsHistoryLimit: 5
+      triggers:
+        - github:
+            secret: secret101
+          type: GitHub
+        - generic:
+            secret: secret101
+          type: Generic
 parameters:
-- description: The App Name
-  displayName: App Name
-  name: APP_NAME
-  required: true
-  value: 'helloservice'
-- description: The URL of the repository with your application source code.
-  displayName: Git Repository URL
-  name: GIT_URL
-  required: true
-  value: 'https://github.com/eformat/spring-boot-camel.git'
-- description: Set this to a branch name, tag or other ref
-  displayName: Git Reference
-  name: GIT_BRANCH
-  value: 'master'
-- description: Set this to dev project name
-  displayName: Dev Project Name
-  name: DEV_PROJECT
-  value: 'spring-boot-camel-dev'
-- description: Number of development pods we desire
-  displayName: Dev App Replica Count
-  name: DEV_REPLICA_COUNT
-  value: '1'
-- description: Dev Tag
-  displayName: Dev Tag
-  name: DEV_TAG
-  value: 'latest'
-- description: Set this to test project name
-  displayName: Test Project Name
-  name: TEST_PROJECT
-  value: 'spring-boot-camel-test'
-- description: Number of test pods we desire
-  displayName: Test App Replica Count
-  name: TEST_REPLICA_COUNT
-  value: '1'
-- description: Test Tag
-  displayName: Test Tag
-  name: TEST_TAG
-  value: 'test'
-- description: Maven Mirror
-  displayName: Maven Mirror
-  name: MAVEN_MIRROR
-  value: 'http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/'
+  - description: The App Name
+    displayName: App Name
+    name: APP_NAME
+    required: true
+    value: "helloservice"
+  - description: The URL of the repository with your application source code.
+    displayName: Git Repository URL
+    name: GIT_URL
+    required: true
+    value: "https://github.com/eformat/spring-boot-camel.git"
+  - description: Set this to a branch name, tag or other ref
+    displayName: Git Reference
+    name: GIT_BRANCH
+    value: "master"
+  - description: Set this to dev project name
+    displayName: Dev Project Name
+    name: DEV_PROJECT
+    value: "spring-boot-camel-dev"
+  - description: Number of development pods we desire
+    displayName: Dev App Replica Count
+    name: DEV_REPLICA_COUNT
+    value: "1"
+  - description: Dev Tag
+    displayName: Dev Tag
+    name: DEV_TAG
+    value: "latest"
+  - description: Set this to test project name
+    displayName: Test Project Name
+    name: TEST_PROJECT
+    value: "spring-boot-camel-test"
+  - description: Number of test pods we desire
+    displayName: Test App Replica Count
+    name: TEST_REPLICA_COUNT
+    value: "1"
+  - description: Test Tag
+    displayName: Test Tag
+    name: TEST_TAG
+    value: "test"
+  - description: Maven Mirror
+    displayName: Maven Mirror
+    name: MAVEN_MIRROR
+    value: "http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/"
