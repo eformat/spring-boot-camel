@@ -16,15 +16,13 @@
 
 package io.fabric8.tests.integration;
 
-import io.fabric8.kubernetes.client.KubernetesClient;
-
+import static io.fabric8.kubernetes.assertions.Assertions.assertThat;
 import org.jboss.arquillian.container.test.api.RunAsClient;
 import org.jboss.arquillian.junit.Arquillian;
 import org.jboss.arquillian.test.api.ArquillianResource;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import static io.fabric8.kubernetes.assertions.Assertions.assertThat;
+import io.fabric8.kubernetes.client.KubernetesClient;
 
 @RunWith(Arquillian.class)
 @RunAsClient

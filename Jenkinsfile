@@ -7,7 +7,9 @@
   oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
  */
 pipeline {
-    // environment {}
+    environment {
+        GIT_SSL_NO_VERIFY = true
+    }
     options {
         // set a timeout of 20 minutes for this pipeline
         timeout(time: 20, unit: 'MINUTES')
