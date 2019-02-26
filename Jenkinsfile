@@ -8,7 +8,7 @@
  */
 pipeline {
     environment {
-        GIT_SSL_NO_VERIFY = true
+        GIT_SSL_NO_VERIFY = 'true'
     }
     options {
         // set a timeout of 20 minutes for this pipeline
@@ -22,15 +22,12 @@ pipeline {
     parameters {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
-        string(name: 'GIT_BRANCH', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")        
-        string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
         string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
         string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
-        string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
         string(name: 'TEST_REPLICA_COUNT', defaultValue: '1', description: "Number of test pods we desire")
         string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
-        string(name: 'PROJECT_PER_DEV_BUILD', defaultValue: 'true', description: "Create A Project Per Dev Build (true || false)")
-        string(name: 'PROJECT_PER_TEST_BUILD', defaultValue: 'true', description: "Create A Project Per Test Build (true || false)")
+        string(name: 'PROJECT_PER_DEV_BUILD', defaultValue: 'false', description: "Create A Project Per Dev Build (true || false)")
+        string(name: 'PROJECT_PER_TEST_BUILD', defaultValue: 'false', description: "Create A Project Per Test Build (true || false)")
         string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/', description: "Maven Mirror")
     }
     stages {
@@ -41,22 +38,22 @@ pipeline {
                     echo "Job Name is: ${env.JOB_NAME}"
                     echo "Branch name is: ${env.BRANCH_NAME}"
                     sh "oc version"
-                    sh 'printenv'
+                    sh 'printenv'                
                     if ("${env.BRANCH_NAME}".length()>0) {
-                        GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
-                        echo "Branch name in use is now: ${GIT_BRANCH}"
+                        env.GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
+                        echo "Branch name in use is now: ${env.GIT_BRANCH}"
                     }
                     // project per build
-                    if ("${PROJECT_PER_DEV_BUILD}"=='true') {
-                        DEV_PROJECT = "${APP_NAME}-dev-${GIT_BRANCH}-${env.BUILD_NUMBER}"
+                    if ("${params.PROJECT_PER_DEV_BUILD}"=='true') {
+                        env.DEV_PROJECT = "${params.APP_NAME}-dev-${env.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        DEV_PROJECT = "${APP_NAME}-dev"
+                        env.DEV_PROJECT = "${params.APP_NAME}-dev"
                     }
                     // project per test
-                    if ("${PROJECT_PER_TEST_BUILD}"=='true') {
-                        TEST_PROJECT = "${APP_NAME}-test-${GIT_BRANCH}-${env.BUILD_NUMBER}"
+                    if ("${params.PROJECT_PER_TEST_BUILD}"=='true') {
+                        env.TEST_PROJECT = "${params.APP_NAME}-test-${env.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        TEST_PROJECT = "${APP_NAME}-test"
+                        env.TEST_PROJECT = "${params.APP_NAME}-test"
                     }
                 }
             }
@@ -67,7 +64,7 @@ pipeline {
                 expression {
                     openshift.withCluster() {
                         openshift.withProject() {
-                            return !openshift.selector("project", "${DEV_PROJECT}").exists();
+                            return !openshift.selector("project", "${env.DEV_PROJECT}").exists();
                         }
                     }
                 }
@@ -77,8 +74,8 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject() {
-                                openshift.newProject("${DEV_PROJECT}")
-                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${DEV_PROJECT}"
+                                openshift.newProject("${env.DEV_PROJECT}")
+                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${env.DEV_PROJECT}"
                             }
                         }
                     }
@@ -91,21 +88,21 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${DEV_PROJECT}") {
+                            openshift.withProject("${env.DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
-                                          branches         : [[name: "*/${GIT_BRANCH}"]],
-                                          userRemoteConfigs: [[url: "${GIT_URL}"]]
+                                          branches         : [[name: "*/${env.BRANCH_NAME}"]],
+                                          userRemoteConfigs: [[url: "${params.GIT_URL}"]]
                                 ]);
                                 // maven cache configuration (change mirror host)
-                                sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
+                                sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${params.MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
                                 def commit_id = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                                 echo "${commit_id}"
-                                if (openshift.selector("dc", "${APP_NAME}").exists()) {
-                                    sh "oc set triggers dc/${APP_NAME} --manual -n ${DEV_PROJECT}"
+                                if (openshift.selector("dc", "${params.APP_NAME}").exists()) {
+                                    sh "oc set triggers dc/${params.APP_NAME} --manual -n ${env.DEV_PROJECT}"
                                 }
-                                sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
-                                if (fileExists("configuration/${APP_NAME}-dev/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${APP_NAME}-dev/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                sh "mvn clean fabric8:deploy -Dfabric8.namespace=${env.DEV_PROJECT}"
+                                if (fileExists("configuration/${params.APP_NAME}-dev/application.yml")) {
+                                    sh "oc create configmap ${params.APP_NAME} -n ${env.DEV_PROJECT} --from-file=configuration/${params.APP_NAME}-dev/application.yml --dry-run -o yaml | oc apply --force -n ${env.DEV_PROJECT} -f-"
                                 }
                                 // TODO: push to nexus
                                 def pom = readMavenPom file: "pom.xml"
@@ -115,8 +112,8 @@ pipeline {
                                 packaging = pom.packaging
                                 NEXUS_ARTIFACT_PATH = "${groupId}/${artifactId}/${appVersion}/${artifactId}-${appVersion}.${packaging}"
                                 // watch deployment
-                                openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
-                                sh "oc set triggers dc/${APP_NAME} --auto -n ${DEV_PROJECT}"
+                                openshift.selector("dc", "${params.APP_NAME}").rollout().status("-w")
+                                sh "oc set triggers dc/${params.APP_NAME} --auto -n ${env.DEV_PROJECT}"
                             }
                         }
                     }
@@ -129,9 +126,9 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${DEV_PROJECT}") {
-                                openshift.selector("dc", "${APP_NAME}").scale("--replicas=${DEV_REPLICA_COUNT}")
-                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${DEV_REPLICA_COUNT}".toInteger()) {
+                            openshift.withProject("${env.DEV_PROJECT}") {
+                                openshift.selector("dc", "${params.APP_NAME}").scale("--replicas=${params.DEV_REPLICA_COUNT}")
+                                openshift.selector("dc", "${params.APP_NAME}").related('pods').untilEach("${params.DEV_REPLICA_COUNT}".toInteger()) {
                                     return (it.object().status.phase == "Running")
                                 }
                             }
@@ -145,8 +142,8 @@ pipeline {
             when {
                 expression {
                     openshift.withCluster() {
-                        openshift.withProject("${DEV_PROJECT}") {
-                            return !openshift.selector("route", "${APP_NAME}").exists();
+                        openshift.withProject("${env.DEV_PROJECT}") {
+                            return !openshift.selector("route", "${params.APP_NAME}").exists();
                         }
                     }
                 }
@@ -155,8 +152,8 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${DEV_PROJECT}") {
-                                openshift.selector("svc", "${APP_NAME}").expose()
+                            openshift.withProject("${env.DEV_PROJECT}") {
+                                openshift.selector("svc", "${params.APP_NAME}").expose()
                             }
                         }
                     }
@@ -178,7 +175,7 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject() {
-                                return !openshift.selector("project", "${TEST_PROJECT}").exists();
+                                return !openshift.selector("project", "${env.TEST_PROJECT}").exists();
                             }
                         }
                     }
@@ -189,8 +186,8 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject() {
-                                openshift.newProject("${TEST_PROJECT}")
-                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${TEST_PROJECT}"
+                                openshift.newProject("${env.TEST_PROJECT}")
+                                sh "oc policy add-role-to-user view --serviceaccount=default -n ${env.TEST_PROJECT}"
                             }
                         }
                     }
@@ -203,17 +200,17 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${DEV_PROJECT}") {
-                                def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
-                                def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
+                            openshift.withProject("${env.DEV_PROJECT}") {
+                                def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${env.TEST_PROJECT}" + '\\/' + "${params.APP_NAME}:${params.TEST_TAG}"
+                                def patch1 = $/oc export dc,svc,secret -n "${env.DEV_PROJECT}" -l project="${params.APP_NAME}" --as-template="${params.APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${env.TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${params.APP_NAME}:${params.DEV_TAG}\",/\"name\": \"${params.APP_NAME}:${params.TEST_TAG}\",/' | oc apply --force -n "${env.TEST_PROJECT}" -f- /$
                                 sh patch1
-                                if (fileExists("configuration/${APP_NAME}-test/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
+                                if (fileExists("configuration/${params.APP_NAME}-test/application.yml")) {
+                                    sh "oc create configmap ${params.APP_NAME} -n ${env.TEST_PROJECT} --from-file=configuration/${params.APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${env.TEST_PROJECT} -f-"
                                 }
-                                openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
+                                openshift.tag("${env.DEV_PROJECT}/${params.APP_NAME}:${params.DEV_TAG}", "${env.TEST_PROJECT}/${params.APP_NAME}:${params.TEST_TAG}")
                             }
-                            openshift.withProject("${TEST_PROJECT}") {
-                                openshift.selector("dc", "${APP_NAME}").rollout().status("-w")
+                            openshift.withProject("${env.TEST_PROJECT}") {
+                                openshift.selector("dc", "${params.APP_NAME}").rollout().status("-w")
                             }
                         }
                     }
@@ -226,9 +223,9 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${TEST_PROJECT}") {
-                                openshift.selector("dc", "${APP_NAME}").scale("--replicas=${TEST_REPLICA_COUNT}")
-                                openshift.selector("dc", "${APP_NAME}").related('pods').untilEach("${TEST_REPLICA_COUNT}".toInteger()) {
+                            openshift.withProject("${env.TEST_PROJECT}") {
+                                openshift.selector("dc", "${params.APP_NAME}").scale("--replicas=${params.TEST_REPLICA_COUNT}")
+                                openshift.selector("dc", "${params.APP_NAME}").related('pods').untilEach("${params.TEST_REPLICA_COUNT}".toInteger()) {
                                     return (it.object().status.phase == "Running")
                                 }
                             }
@@ -242,8 +239,8 @@ pipeline {
             when {
                 expression {
                     openshift.withCluster() {
-                        openshift.withProject("${TEST_PROJECT}") {
-                            return !openshift.selector("route", "${APP_NAME}").exists();
+                        openshift.withProject("${env.TEST_PROJECT}") {
+                            return !openshift.selector("route", "${params.APP_NAME}").exists();
                         }
                     }
                 }
@@ -252,8 +249,8 @@ pipeline {
                 script {
                     openshift.withCluster() {
                         openshift.withCredentials() {
-                            openshift.withProject("${TEST_PROJECT}") {
-                                openshift.selector("svc", "${APP_NAME}").expose()
+                            openshift.withProject("${env.TEST_PROJECT}") {
+                                openshift.selector("svc", "${params.APP_NAME}").expose()
                             }
                         }
                     }
