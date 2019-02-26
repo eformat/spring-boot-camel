@@ -57,3 +57,13 @@ You can also use the [fabric8 developer console](http://fabric8.io/guide/console
 
 You can find more details about running this [quickstart](http://fabric8.io/guide/quickstarts/running.html) on the website. This also includes instructions how to change the Docker image user and registry.
 
+#### CI/CD Demo
+
+```
+oc new-project ci-cd --description "CI/CD" --display-name="CI/CD"
+oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default
+oc adm policy add-cluster-role-to-user self-provisioner system:serviceaccount:$(oc project -q):jenkins
+oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
+oc process -f helloservice-pipeline-bc.yaml | oc apply -f-
+oc start-build helloservice
+```

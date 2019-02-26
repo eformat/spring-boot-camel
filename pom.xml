@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.13.RELEASE</version>
+        <version>1.5.19.RELEASE</version>
         <relativePath></relativePath>
     </parent>
     <groupId>io.fabric8.quickstarts</groupId>
@@ -20,9 +20,9 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.20</maven-surefire-plugin.version>
-        <fuse.version>7.1.0.fuse-710019-redhat-00002</fuse.version>
-        <spring-boot.version>1.5.13.RELEASE</spring-boot.version>
-        <openshift.istag>openshift/fuse7-java-openshift:1.1</openshift.istag>
+        <fuse.version>7.2.0.fuse-720020-redhat-00001</fuse.version>
+        <spring-boot.version>1.5.19.RELEASE</spring-boot.version>
+        <openshift.istag>openshift/fuse7-java-openshift:1.2</openshift.istag>
     </properties>
     <dependencyManagement>
         <dependencies>
