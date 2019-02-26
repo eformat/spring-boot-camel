@@ -36,22 +36,24 @@ pipeline {
     stages {
         stage('initialise') {
             steps {
-                echo "Build Number is: ${env.BUILD_NUMBER}"
-                echo "Job Name is: ${env.JOB_NAME}"
-                echo "Branch name is: ${env.BRANCH_NAME}"
-                sh "oc version"
-                sh 'printenv'
-                // project per build
-                if ("${PROJECT_PER_DEV_BUILD}"=='true') {
-                    DEV_PROJECT = "${APP_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
-                } else {
-                    DEV_PROJECT = "${APP_NAME}-dev"
-                }
-                // project per test
-                if ("${PROJECT_PER_TEST_BUILD}"=='true') {
-                    TEST_PROJECT = "${APP_NAME}-test-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
-                } else {
-                    TEST_PROJECT = "${APP_NAME}-test"
+                script {
+                    echo "Build Number is: ${env.BUILD_NUMBER}"
+                    echo "Job Name is: ${env.JOB_NAME}"
+                    echo "Branch name is: ${env.BRANCH_NAME}"
+                    sh "oc version"
+                    sh 'printenv'
+                    // project per build
+                    if ("${PROJECT_PER_DEV_BUILD}"=='true') {
+                        DEV_PROJECT = "${APP_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+                    } else {
+                        DEV_PROJECT = "${APP_NAME}-dev"
+                    }
+                    // project per test
+                    if ("${PROJECT_PER_TEST_BUILD}"=='true') {
+                        TEST_PROJECT = "${APP_NAME}-test-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+                    } else {
+                        TEST_PROJECT = "${APP_NAME}-test"
+                    }
                 }
             }
         }
