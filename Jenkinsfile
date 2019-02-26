@@ -8,10 +8,10 @@
  */
 pipeline {
     environment {
-        GIT_SSL_NO_VERIFY = true
-	GIT_BRANCH = master
-	DEV_PROJECT = spring-boot-camel-dev
-	TEST_PROJECT = spring-boot-camel-test
+        GIT_SSL_NO_VERIFY = 'true'
+	GIT_BRANCH = 'master'
+	DEV_PROJECT = 'spring-boot-camel-dev'
+	TEST_PROJECT = 'spring-boot-camel-test'
     }
     options {
         // set a timeout of 20 minutes for this pipeline
