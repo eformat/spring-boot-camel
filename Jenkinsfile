@@ -22,7 +22,6 @@ pipeline {
     parameters {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
-        string(name: 'BRANCH_NAME', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")
         string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
         string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
         string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
@@ -40,7 +39,6 @@ pipeline {
                     echo "Build Number is: ${env.BUILD_NUMBER}"
                     echo "Job Name is: ${env.JOB_NAME}"
                     echo "Branch name is: ${env.BRANCH_NAME}"
-                    BRANCH_NAME = "${env.BRANCH_NAME}"
                     sh "oc version"
                     sh 'printenv'
                     // project per build
@@ -90,7 +88,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
-                                          branches         : [[name: "*/${BRANCH_NAME}"]],
+                                          branches         : [[name: "*/${env.BRANCH_NAME}"]],
                                           userRemoteConfigs: [[url: "${GIT_URL}"]]
                                 ]);
                                 // maven cache configuration (change mirror host)
