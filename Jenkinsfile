@@ -41,7 +41,7 @@ pipeline {
                     sh 'printenv'                
                     if ("${env.BRANCH_NAME}".length()>0) {
                         env.GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
-                        echo "Branch name in use is now: ${params.GIT_BRANCH}"
+                        echo "Branch name in use is now: ${env.GIT_BRANCH}"
                     }
                     // project per build
                     if ("${params.PROJECT_PER_DEV_BUILD}"=='true') {
