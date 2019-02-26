@@ -22,7 +22,6 @@ pipeline {
     parameters {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
-        string(name: 'BRANCH_NAME', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")
         string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
         string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
         string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
@@ -89,7 +88,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
-                                          branches         : [[name: "*/${BRANCH_NAME}"]],
+                                          branches         : [[name: "*/${env.BRANCH_NAME}"]],
                                           userRemoteConfigs: [[url: "${GIT_URL}"]]
                                 ]);
                                 // maven cache configuration (change mirror host)
@@ -100,8 +99,8 @@ pipeline {
                                     sh "oc set triggers dc/${APP_NAME} --manual -n ${DEV_PROJECT}"
                                 }
                                 sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
-                                if (fileExists("configuration/${DEV_PROJECT}/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                if (fileExists("configuration/${APP_NAME}-dev/application.yml")) {
+                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                 }
                                 // TODO: push to nexus
                                 def pom = readMavenPom file: "pom.xml"
@@ -203,8 +202,8 @@ pipeline {
                                 def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
                                 def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
                                 sh patch1
-                                if (fileExists("configuration/${TEST_PROJECT}/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
+                                if (fileExists("configuration/${APP_NAME}-test/application.yml")) {
+                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
                                 }
                                 openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
                             }
