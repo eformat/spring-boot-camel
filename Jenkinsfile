@@ -42,7 +42,7 @@ pipeline {
                     echo "Branch name is: ${env.BRANCH_NAME}"
                     sh "oc version"
                     sh 'printenv'
-                    if (${env.BRANCH_NAME}) {
+                    if ("${env.BRANCH_NAME}".length()>0) {
                         GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
                     }
                     // project per build
