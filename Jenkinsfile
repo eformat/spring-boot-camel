@@ -22,6 +22,7 @@ pipeline {
     parameters {
         string(name: 'APP_NAME', defaultValue: 'helloservice', description: "Application Name - all resources use this name as a label")
         string(name: 'GIT_URL', defaultValue: 'https://github.com/eformat/spring-boot-camel.git', description: "Project Git URL)")
+        string(name: 'GIT_BRANCH', defaultValue: 'master', description: "Git Branch (from Multibranch plugin if being used)")        
         string(name: 'DEV_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Development namespace")
         string(name: 'DEV_REPLICA_COUNT', defaultValue: '1', description: "Number of development pods we desire")
         string(name: 'DEV_TAG', defaultValue: 'latest', description: "Development tag")
@@ -41,15 +42,19 @@ pipeline {
                     echo "Branch name is: ${env.BRANCH_NAME}"
                     sh "oc version"
                     sh 'printenv'
+                    if ("${env.BRANCH_NAME}".length()>0) {
+                        GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
+                        echo "Branch name in use is now: ${GIT_BRANCH}"
+                    }
                     // project per build
                     if ("${PROJECT_PER_DEV_BUILD}"=='true') {
-                        DEV_PROJECT = "${APP_NAME}-dev-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+                        DEV_PROJECT = "${APP_NAME}-dev-${GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
                         DEV_PROJECT = "${APP_NAME}-dev"
                     }
                     // project per test
                     if ("${PROJECT_PER_TEST_BUILD}"=='true') {
-                        TEST_PROJECT = "${APP_NAME}-test-${env.BRANCH_NAME}-${env.BUILD_NUMBER}"
+                        TEST_PROJECT = "${APP_NAME}-test-${GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
                         TEST_PROJECT = "${APP_NAME}-test"
                     }
@@ -88,7 +93,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject("${DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
-                                          branches         : [[name: "*/${env.BRANCH_NAME}"]],
+                                          branches         : [[name: "*/${GIT_BRANCH}"]],
                                           userRemoteConfigs: [[url: "${GIT_URL}"]]
                                 ]);
                                 // maven cache configuration (change mirror host)
@@ -100,7 +105,7 @@ pipeline {
                                 }
                                 sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                 if (fileExists("configuration/${APP_NAME}-dev/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${APP_NAME}-dev/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                 }
                                 // TODO: push to nexus
                                 def pom = readMavenPom file: "pom.xml"
