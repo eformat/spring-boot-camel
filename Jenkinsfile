@@ -9,6 +9,9 @@
 pipeline {
     environment {
         GIT_SSL_NO_VERIFY = true
+	GIT_BRANCH = master
+	DEV_PROJECT = spring-boot-camel-dev
+	TEST_PROJECT = spring-boot-camel-test
     }
     options {
         // set a timeout of 20 minutes for this pipeline
@@ -43,20 +46,20 @@ pipeline {
                     sh "oc version"
                     sh 'printenv'
                     if ("${env.BRANCH_NAME}".length()>0) {
-                        params.GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
+                        GIT_BRANCH = "${env.BRANCH_NAME}".toLowerCase()
                         echo "Branch name in use is now: ${params.GIT_BRANCH}"
                     }
                     // project per build
                     if ("${params.PROJECT_PER_DEV_BUILD}"=='true') {
-                        params.DEV_PROJECT = "${params.APP_NAME}-dev-${params.GIT_BRANCH}-${env.BUILD_NUMBER}"
+                        DEV_PROJECT = "${params.APP_NAME}-dev-${params.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        params.DEV_PROJECT = "${params.APP_NAME}-dev"
+                        DEV_PROJECT = "${params.APP_NAME}-dev"
                     }
                     // project per test
                     if ("${params.PROJECT_PER_TEST_BUILD}"=='true') {
-                        params.TEST_PROJECT = "${params.APP_NAME}-test-${params.GIT_BRANCH}-${env.BUILD_NUMBER}"
+                        TEST_PROJECT = "${params.APP_NAME}-test-${params.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        params.TEST_PROJECT = "${params.APP_NAME}-test"
+                        TEST_PROJECT = "${params.APP_NAME}-test"
                     }
                 }
             }
