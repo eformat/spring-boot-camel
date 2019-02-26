@@ -40,6 +40,7 @@ pipeline {
                     echo "Build Number is: ${env.BUILD_NUMBER}"
                     echo "Job Name is: ${env.JOB_NAME}"
                     echo "Branch name is: ${env.BRANCH_NAME}"
+                    BRANCH_NAME = "${env.BRANCH_NAME}"
                     sh "oc version"
                     sh 'printenv'
                     // project per build
