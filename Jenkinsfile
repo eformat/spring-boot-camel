@@ -29,8 +29,8 @@ pipeline {
         string(name: 'TEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Name of the Test namespace")
         string(name: 'TEST_REPLICA_COUNT', defaultValue: '1', description: "Number of test pods we desire")
         string(name: 'TEST_TAG', defaultValue: 'test', description: "Test tag")
-        string(name: 'PROJECT_PER_DEV_BUILD', defaultValue: 'true', description: "Create A Project Per Dev Build (true || false)")
-        string(name: 'PROJECT_PER_TEST_BUILD', defaultValue: 'true', description: "Create A Project Per Test Build (true || false)")
+        string(name: 'PROJECT_PER_DEV_BUILD', defaultValue: 'false', description: "Create A Project Per Dev Build (true || false)")
+        string(name: 'PROJECT_PER_TEST_BUILD', defaultValue: 'false', description: "Create A Project Per Test Build (true || false)")
         string(name: 'MAVEN_MIRROR', defaultValue: 'http://nexus.nexus.svc.cluster.local:8081/repository/maven-public/', description: "Maven Mirror")
     }
     stages {
