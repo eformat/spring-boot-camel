@@ -101,7 +101,7 @@ pipeline {
                                 }
                                 sh "mvn clean fabric8:deploy -Dfabric8.namespace=${DEV_PROJECT}"
                                 if (fileExists("configuration/${APP_NAME}-dev/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${DEV_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
+                                    sh "oc create configmap ${APP_NAME} -n ${DEV_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${DEV_PROJECT} -f-"
                                 }
                                 // TODO: push to nexus
                                 def pom = readMavenPom file: "pom.xml"
@@ -204,7 +204,7 @@ pipeline {
                                 def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${APP_NAME}" --as-template="${APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${TEST_TAG}\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
                                 sh patch1
                                 if (fileExists("configuration/${APP_NAME}-test/application.yml")) {
-                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${TEST_PROJECT}/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
+                                    sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
                                 }
                                 openshift.tag("${DEV_PROJECT}/${APP_NAME}:${DEV_TAG}", "${TEST_PROJECT}/${APP_NAME}:${TEST_TAG}")
                             }
