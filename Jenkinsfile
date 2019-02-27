@@ -47,13 +47,13 @@ pipeline {
                     if ("${params.PROJECT_PER_DEV_BUILD}"=='true') {
                         env.DEV_PROJECT = "${params.APP_NAME}-dev-${env.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        env.DEV_PROJECT = "${params.APP_NAME}-dev"
+                        env.DEV_PROJECT = "${params.APP_NAME}-dev-${env.GIT_BRANCH}"
                     }
                     // project per test
                     if ("${params.PROJECT_PER_TEST_BUILD}"=='true') {
                         env.TEST_PROJECT = "${params.APP_NAME}-test-${env.GIT_BRANCH}-${env.BUILD_NUMBER}"
                     } else {
-                        env.TEST_PROJECT = "${params.APP_NAME}-test"
+                        env.TEST_PROJECT = "${params.APP_NAME}-test-${env.GIT_BRANCH}"
                     }
                 }
             }
