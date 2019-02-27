@@ -91,7 +91,8 @@ pipeline {
                             openshift.withProject("${env.DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
                                           branches         : [[name: "*/${env.BRANCH_NAME}"]],
-                                          userRemoteConfigs: [[url: "${params.GIT_URL}"]]
+                                          userRemoteConfigs: [[url: "${params.GIT_URL}"]],
+                                          refspec          : '+refs/pull/*:refs/remotes/origin/pr/*'
                                 ]);
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${params.MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
@@ -161,13 +162,13 @@ pipeline {
             }
         }
 
-        stage('test deployment') {
+/*        stage('test deployment') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     input 'Do you approve deployment to Test environment ?'
                 }
             }
-        }
+        }*/
 
         stage('create test project') {
             when {
