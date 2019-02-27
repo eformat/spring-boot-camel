@@ -67,3 +67,7 @@ oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -
 oc process -f helloservice-pipeline-bc.yaml | oc apply -f-
 oc start-build helloservice
 ```
+
+#### Multi-branch pipeline
+
+Use the Jenkinsfile in base directory as part of multibranch pipeline build for Pull Requests.
