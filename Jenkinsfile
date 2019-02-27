@@ -161,13 +161,13 @@ pipeline {
             }
         }
 
-        stage('test deployment') {
+/*        stage('test deployment') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
                     input 'Do you approve deployment to Test environment ?'
                 }
             }
-        }
+        }*/
 
         stage('create test project') {
             when {
