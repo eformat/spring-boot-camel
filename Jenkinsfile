@@ -91,7 +91,7 @@ pipeline {
                             openshift.withProject("${env.DEV_PROJECT}") {
                                 checkout([$class           : 'GitSCM',
                                           branches         : [[name: "*/${env.BRANCH_NAME}"]],
-                                          userRemoteConfigs: [[url: "${params.GIT_URL}", refspec: "+refs/pull/*/head:refs/remotes/origin/*"]],
+                                          userRemoteConfigs: [[url: "${params.GIT_URL}", refspec: "+refs/pull/*/head:refs/remotes/origin/pr/*"]], 
                                 ]);
                                 // maven cache configuration (change mirror host)
                                 sh "sed -i \"s|<!-- ### configured mirrors ### -->|<mirror><id>mirror.default</id><url>${params.MAVEN_MIRROR}</url><mirrorOf>external:*</mirrorOf></mirror>|\" /home/jenkins/.m2/settings.xml"
