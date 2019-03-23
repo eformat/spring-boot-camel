@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.19.RELEASE</version>
+        <version>1.5.16.RELEASE</version>
         <relativePath></relativePath>
     </parent>
     <groupId>io.fabric8.quickstarts</groupId>
@@ -18,18 +18,20 @@
         <java.version>1.8</java.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven-compiler-plugin.version>3.7.0</maven-compiler-plugin.version>
-        <maven-surefire-plugin.version>2.20</maven-surefire-plugin.version>
         <fuse.version>7.2.0.fuse-720020-redhat-00001</fuse.version>
-        <spring-boot.version>1.5.19.RELEASE</spring-boot.version>
+        <fabric8.version>3.0.11.fuse-720027-redhat-00001</fabric8.version>
+        <spring-boot.version>1.5.16.RELEASE</spring-boot.version>
+        <fabric8.maven.plugin.version>3.5.33.fuse-720026-redhat-00001</fabric8.maven.plugin.version>
+        <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
+        <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
         <openshift.istag>openshift/fuse7-java-openshift:1.2</openshift.istag>
     </properties>
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.jboss.redhat-fuse</groupId>
-                <artifactId>fuse-springboot-bom</artifactId>
-                <version>${fuse.version}</version>
+                <groupId>io.fabric8</groupId>
+                <artifactId>fabric8-project-bom-camel-spring-boot</artifactId>
+                <version>${fabric8.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

@@ -8,7 +8,7 @@ spring:
         kubernetes:
             reload:
                 enabled: true
-                strategy: restart_context # this is needed for java implementation, spring refresh (default) works for spring xml
+                strategy: RESTART_CONTEXT # this is needed for java implementation, spring refresh (default) works for spring xml
 
 server:
     address: 0.0.0.0 # lets listen on all ports to ensure we can be invoked from the pod IP
