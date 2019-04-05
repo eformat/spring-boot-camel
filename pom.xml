@@ -22,6 +22,8 @@
         <fabric8.version>3.0.11.fuse-720027-redhat-00001</fabric8.version>
         <spring-boot.version>1.5.16.RELEASE</spring-boot.version>
         <fabric8.maven.plugin.version>3.5.33.fuse-720026-redhat-00001</fabric8.maven.plugin.version>
+        <ch.qos.logback.version>1.2.3</ch.qos.logback.version>
+        <logstash-logback-encoder.version>5.3</logstash-logback-encoder.version>
         <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
         <maven-surefire-plugin.version>2.18.1</maven-surefire-plugin.version>
         <openshift.istag>openshift/fuse7-java-openshift:1.2</openshift.istag>
@@ -64,6 +66,27 @@
             <groupId>io.fabric8</groupId>
             <artifactId>spring-cloud-kubernetes-core</artifactId>
         </dependency>
+        <!-- Structured Logging - use latest versions compatible with logstash-logback-encoder >
+        <dependency>
+            <groupId>net.logstash.logback</groupId>
+            <artifactId>logstash-logback-encoder</artifactId>
+            <version>${logstash-logback-encoder.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${ch.qos.logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${ch.qos.logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-access</artifactId>
+            <version>${ch.qos.logback.version}</version>
+        </dependency -->
         <!-- testing -->
         <dependency>
             <groupId>junit</groupId>
