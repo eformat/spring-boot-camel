@@ -64,6 +64,7 @@ oc new-project ci-cd --description "CI/CD" --display-name="CI/CD"
 oc policy add-role-to-user view system:serviceaccount:$(oc project -q):default
 oc adm policy add-cluster-role-to-user self-provisioner system:serviceaccount:$(oc project -q):jenkins
 oc adm policy add-cluster-role-to-user view system:serviceaccount:$(oc project -q):jenkins
+oc -n openshift process jenkins-persistent | oc create -f-
 oc process -f helloservice-pipeline-bc.yaml | oc apply -f-
 oc start-build helloservice
 ```
