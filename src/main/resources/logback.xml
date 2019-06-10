@@ -9,7 +9,7 @@
             <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
         <!-- json structured logging - https://developers.redhat.com/blog/2018/01/22/openshift-structured-application-logs/ -->
-        <!--encoder class="net.logstash.logback.encoder.LogstashEncoder"/-->
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
     <root level="info">
