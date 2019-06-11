@@ -181,7 +181,7 @@ objects:
 
                     stage('test deployment') {
                         steps {
-                            timeout(time: 5, unit: 'MINUTES') {
+                            timeout(time: 15, unit: 'MINUTES') {
                                 input 'Do you approve deployment to Test environment ?'
                             }
                         }
@@ -220,17 +220,7 @@ objects:
                                     openshift.withCredentials() {
                                         openshift.withProject("${DEV_PROJECT}") {
                                             def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${TEST_PROJECT}" + '\\/' + "${APP_NAME}:${TEST_TAG}"
-                                            def patch1 = $/oc export dc,svc,secret -n "${DEV_PROJECT}" -l project="${
-                                                APP_NAME
-                                            }" --as-template="${
-                                                APP_NAME
-                                            }"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${
-                                                testImage
-                                            }\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${
-                                                TEST_PROJECT
-                                            }\"/' | sed -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\",/\"name\": \"${APP_NAME}:${
-                                                TEST_TAG
-                                            }\",/' | oc apply --force -n "${TEST_PROJECT}" -f- /$
+                                            def patch1 = $/oc get --export -o json dc,svc,secret -n "${DEV_PROJECT}" -l project="${APP_NAME}" | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\": \"${DEV_PROJECT}\"/\"namespace\": \"${TEST_PROJECT}\"/' -e $'s/\"name\": \"${APP_NAME}:${DEV_TAG}\"/\"name\": \"${APP_NAME}:${TEST_TAG}\"/' -e $'s/\"clusterIP\":.*//'| oc apply --force -n "${TEST_PROJECT}" -f- /$
                                             sh patch1
                                             if (fileExists("configuration/${APP_NAME}-test/application.yml")) {
                                                 sh "oc create configmap ${APP_NAME} -n ${TEST_PROJECT} --from-file=configuration/${APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${TEST_PROJECT} -f-"
