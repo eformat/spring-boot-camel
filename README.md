@@ -99,6 +99,15 @@ Build the operator image
 podman build --no-cache -t spring-boot-camel-operator:v0.0.1 -f build/Dockerfile .
 ```
 
+Setup podman locally
+
+```
+HOST=$(oc get route default-route -n openshift-image-registry --template='{{ .spec.host }}')
+sudo mkdir -p /etc/containers/certs.d/$HOST
+echo $(oc get secrets router-ca --template='{{index .data "tls.crt"}}' -n openshift-ingress-operator) | base64 -d | sudo tee /etc/containers/certs.d/$HOST/ca.crt
+podman login -u $(oc whoami) -p $(oc whoami -t) $HOST
+```
+
 Deploy operator image
 
 ```
