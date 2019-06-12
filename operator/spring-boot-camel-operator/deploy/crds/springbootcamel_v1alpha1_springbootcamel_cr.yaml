@@ -1,0 +1,7 @@
+apiVersion: spring-boot-camel.eformat.me/v1alpha1
+kind: SpringBootCamel
+metadata:
+  name: spring-boot-camel
+spec:
+  # Add fields here
+  size: 1
