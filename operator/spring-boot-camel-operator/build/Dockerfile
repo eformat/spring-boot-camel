@@ -1,7 +1,7 @@
-FROM quay.io/operator-framework/ansible-operator:v0.8.0
+FROM quay.io/operator-framework/ansible-operator:latest
 
 USER root
-RUN yum -y install git
+RUN yum -y install git && yum clean all && rm -rf /var/cache/yum
 
 RUN ansible-galaxy install git+https://github.com/eformat/spring-boot-camel-role.git
 
