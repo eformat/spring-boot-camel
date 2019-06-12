@@ -6,4 +6,4 @@ spec:
   # Add fields here
   size: 1
   greeting_message: "Hello Ansible Operators R0ck ! \u263A"
-  greeting_timeout: 1000
+  greeting_timeout: 3000
