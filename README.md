@@ -96,6 +96,8 @@ https://github.com/eformat/spring-boot-camel-role.git
 Build the operator image
 
 ```
+cd spring-boot-camel/operator/spring-boot-camel-operator
+
 podman build --no-cache -t spring-boot-camel-operator:v0.0.1 -f build/Dockerfile .
 ```
 
