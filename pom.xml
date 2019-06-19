@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.16.RELEASE</version>
+        <version>1.5.17.RELEASE</version>
         <relativePath></relativePath>
     </parent>
     <groupId>io.fabric8.quickstarts</groupId>
@@ -18,10 +18,10 @@
         <java.version>1.8</java.version>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <fuse.version>7.2.0.fuse-720020-redhat-00001</fuse.version>
-        <fabric8.version>3.0.11.fuse-720027-redhat-00001</fabric8.version>
-        <spring-boot.version>1.5.16.RELEASE</spring-boot.version>
+        <fuse.version>7.3.1.fuse-731003-redhat-00003</fuse.version>
+        <spring-boot.version>1.5.17.RELEASE</spring-boot.version>
         <fabric8.maven.plugin.version>4.1.0</fabric8.maven.plugin.version>
+        <spring-cloud-kubernetes-core.version>0.1.6.fuse-731002-redhat-00003</spring-cloud-kubernetes-core.version>
         <ch.qos.logback.version>1.2.3</ch.qos.logback.version>
         <logstash-logback-encoder.version>5.3</logstash-logback-encoder.version>
         <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
@@ -31,11 +31,17 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>io.fabric8</groupId>
-                <artifactId>fabric8-project-bom-camel-spring-boot</artifactId>
-                <version>${fabric8.version}</version>
+                <groupId>org.jboss.redhat-fuse</groupId>
+                <artifactId>fuse-springboot-bom</artifactId>
+                <version>${fuse.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>spring-cloud-kubernetes-core</artifactId>
+                <version>${spring-cloud-kubernetes-core.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

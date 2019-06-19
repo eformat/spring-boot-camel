@@ -1,0 +1,9 @@
+apiVersion: spring-boot-camel.eformat.me/v1alpha1
+kind: SpringBootCamel
+metadata:
+  name: my-camel
+spec:
+  # Add fields here
+  size: 3
+  greeting_message: "Calling Dr.Operator ..."
+  greeting_timeout: 5000
