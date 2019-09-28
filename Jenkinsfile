@@ -203,7 +203,7 @@ pipeline {
                     openshift.withCluster() {
                         openshift.withCredentials() {
                             openshift.withProject("${env.DEV_PROJECT}") {
-                                def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${env.TEST_PROJECT}" + '\\/' + "${params.APP_NAME}:${params.TEST_TAG}"
+                                def testImage = "image-registry.openshift-image-registry.svc.local:5000" + '\\/' + "${env.TEST_PROJECT}" + '\\/' + "${params.APP_NAME}:${params.TEST_TAG}"
                                 def patch1 = $/oc get --export -o json dc,svc,secret -n "${env.DEV_PROJECT}" -l project="${params.APP_NAME}" | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\": \"${env.DEV_PROJECT}\"/\"namespace\": \"${env.TEST_PROJECT}\"/' -e $'s/\"name\": \"${params.APP_NAME}:${params.DEV_TAG}\"/\"name\": \"${params.APP_NAME}:${params.TEST_TAG}\"/' -e $'s/\"clusterIP\":.*//'| oc apply --force -n "${env.TEST_PROJECT}" -f- /$
                                 sh patch1
                                 if (fileExists("configuration/${params.APP_NAME}-test/application.yml")) {
