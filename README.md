@@ -142,7 +142,7 @@ Delete Application
 ```
 oc delete -f deploy/crds/springbootcamel_v1alpha1_springbootcamel_cr.yaml
 -- OR
-oc delete SpringBootCamel
+oc delete SpringBootCamel/spring-boot-camel
 ```
 
 Delete operator and configs

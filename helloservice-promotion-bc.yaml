@@ -1,0 +1,135 @@
+apiVersion: v1
+kind: BuildConfig
+metadata:
+    creationTimestamp: null
+    labels:
+        app: promotion-pipeline
+        name: promotion-pipeline
+    name: promotion-pipeline
+spec:
+    nodeSelector: null
+    output: {}
+    postCommit: {}
+    resources: {}
+    runPolicy: Serial
+    source:
+        type: None
+    strategy:
+        jenkinsPipelineStrategy:
+            jenkinsfile: |
+                #!groovy
+
+                pipeline {
+                    environment {
+                        def timestamp = "${System.currentTimeMillis()}"
+                    }
+                    options {
+                        // set a timeout of 20 minutes for this pipeline
+                        timeout(time: 40, unit: 'MINUTES')
+                        // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
+                        skipDefaultCheckout()
+                    }
+                    agent {
+                        label 'maven'
+                    }
+                    parameters {
+                        choice(name: 'APP_TAG_NAMES', choices: 'helloservice', description: 'What Application?')
+                        //
+                        string(name: 'SRC_PROJECT', defaultValue: 'spring-boot-camel-dev', description: "Name of the Source Namespace")
+                        string(name: 'SRC_TAG', defaultValue: 'test', description: "Tag for source applications")
+                        //
+                        string(name: 'DEST_PROJECT', defaultValue: 'spring-boot-camel-test', description: "Dest namespace")
+                        string(name: 'DEST_TAG', defaultValue: 'test', description: "Dest Tag")
+                        string(name: 'DEST_REPLICA_COUNT', defaultValue: '1', description: "Number of pods we desire")
+                    }
+
+                    stages {
+                        stage('initialise') {
+                            steps {
+                                echo "Build Number is: ${env.BUILD_NUMBER}"
+                                echo "Job Name is: ${env.JOB_NAME}"
+                            }
+                        }
+
+                        stage('Promote image from source to dest') {
+                            steps {
+                                script {
+                                    openshift.withCluster() {
+
+                                        openshift.verbose()
+
+                                        APP_LIST = "${params.APP_TAG_NAMES}".split(" ")
+
+                                        // get approval to promote
+                                        //NUM_APPS = APP_LIST.size()
+                                        //input message: "Approve to deploy ${NUM_APPS} app/s to Stage?", id: "approval"
+
+                                        APP_LIST.each() {
+                                            def APP_NAME = it
+
+                                            stage(APP_NAME) {
+                                                // we are promoting a template based configuration
+                                                def template = [
+                                                    "apiVersion": "v1",
+                                                    "kind": "Template",
+                                                    "metadata": [
+                                                         "creationTimestamp": "null",
+                                                         "name": "helloservice"
+                                                    ],
+                                                    "objects": []
+                                                ]
+
+                                                openshift.withProject("${params.SRC_PROJECT}") {
+                                                    if (!openshift.selector("dc", "${APP_NAME}").exists()) {
+                                                        echo "${APP_NAME} does not exist in ${params.SRC_PROJECT}, cannot deploy"
+                                                        return
+                                                    }
+                                                    svc = "${openshift.raw('get', '-o template', "--template='{{.}}'", 'svc', "-l app=${APP_NAME}").out}"
+                                                    template.objects.add(svc.toString())
+                                                }
+
+                                                openshift.withProject("${params.DEST_PROJECT}") {
+                                                    // create and modify the template
+                                                    if (openshift.selector("template", "${APP_NAME}").exists()) {
+                                                        openshift.replace(template)
+                                                    } else {
+                                                        openshift.create(template)
+                                                    }
+
+                                                    def t = openshift.selector('template', "${APP_NAME}").object()
+
+                                                    for (obj in t.objects) {
+                                                        obj.metadata.labels["promoted-on"] = timestamp
+                                                        if (obj.spec && obj.spec.template) {
+                                                            obj.spec.template.spec.containers[0].image = ''
+                                                            for (trig in obj.spec.triggers) {
+                                                                if (trig.imageChangeParams) {
+                                                                    // vital ! let the trigger fill this in
+                                                                    trig.imageChangeParams.from.name = "${APP_NAME}:${params.DEST_TAG}"
+                                                                    trig.imageChangeParams.from.namespace = "${params.DEST_PROJECT}"
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+
+                                                    // store template with new params (note image trigger false)
+                                                    openshift.replace(t)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+        type: JenkinsPipeline
+    triggers:
+        - github:
+              secret: secret101
+          type: GitHub
+        - generic:
+              secret: secret101
+          type: Generic
+status:
+    lastVersion: 0

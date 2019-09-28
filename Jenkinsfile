@@ -204,7 +204,7 @@ pipeline {
                         openshift.withCredentials() {
                             openshift.withProject("${env.DEV_PROJECT}") {
                                 def testImage = "docker-registry.default.svc.local:5000" + '\\/' + "${env.TEST_PROJECT}" + '\\/' + "${params.APP_NAME}:${params.TEST_TAG}"
-                                def patch1 = $/oc export dc,svc,secret -n "${env.DEV_PROJECT}" -l project="${params.APP_NAME}" --as-template="${params.APP_NAME}"-template | oc process -f- | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\":.*/\"namespace\": \"${env.TEST_PROJECT}\"/' | sed -e $'s/\"name\": \"${params.APP_NAME}:${params.DEV_TAG}\",/\"name\": \"${params.APP_NAME}:${params.TEST_TAG}\",/' | oc apply --force -n "${env.TEST_PROJECT}" -f- /$
+                                def patch1 = $/oc get --export -o json dc,svc,secret -n "${env.DEV_PROJECT}" -l project="${params.APP_NAME}" | sed -e $'s/\"image\":.*/\"image\": \"${testImage}\",/' -e $'s/\"namespace\": \"${env.DEV_PROJECT}\"/\"namespace\": \"${env.TEST_PROJECT}\"/' -e $'s/\"name\": \"${params.APP_NAME}:${params.DEV_TAG}\"/\"name\": \"${params.APP_NAME}:${params.TEST_TAG}\"/' -e $'s/\"clusterIP\":.*//'| oc apply --force -n "${env.TEST_PROJECT}" -f- /$
                                 sh patch1
                                 if (fileExists("configuration/${params.APP_NAME}-test/application.yml")) {
                                     sh "oc create configmap ${params.APP_NAME} -n ${env.TEST_PROJECT} --from-file=configuration/${params.APP_NAME}-test/application.yml --dry-run -o yaml | oc apply --force -n ${env.TEST_PROJECT} -f-"
