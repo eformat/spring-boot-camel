@@ -19,6 +19,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.stereotype.Component;
 // import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
  * A spring-boot application that includes a Camel route builder to setup the Camel routes
  */
 @SpringBootApplication
+@EnableDiscoveryClient
 // @ImportResource({"classpath:spring/camel-context.xml"})
 public class Application {
 
