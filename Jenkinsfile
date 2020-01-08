@@ -15,6 +15,7 @@ pipeline {
         timeout(time: 20, unit: 'MINUTES')
         // when running Jenkinsfile from SCM using jenkinsfilepath the node implicitly does a checkout
         skipDefaultCheckout()
+        buildDiscarder(logRotator(numToKeepStr:'10'))
     }
     agent {
         label 'maven'
